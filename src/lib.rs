@@ -167,7 +167,11 @@ fn sign_es<P: ToKey>(data: &str, private_key_path: &P, algorithm: Algorithm) -> 
         _  => panic!("Invalid hmac algorithm")
     };
 
-    sign(data, key, stp)
+    let mut signer = Signer::new(stp, &key)?;
+    signer.update(data.as_bytes())?;
+    let signature = signer.sign_to_vec()?;
+    let signature_raw = der_to_raw_signature(signature);
+    Ok(b64_enc(signature_raw.as_slice(), base64::URL_SAFE))
 }
 
 fn sign(data: &str, private_key: PKey,digest: MessageDigest) -> Result<String, Error> {
@@ -238,7 +242,8 @@ fn verify_signature<P: ToKey>(algorithm: Algorithm, signing_input: String, signa
             let digest = get_sha_algorithm(algorithm);
             let mut verifier = Verifier::new(digest, &key)?;
             verifier.update(signing_input.as_bytes())?;
-            verifier.verify(&signature).map_err(Error::from)
+            let signature_der = raw_to_der_signature(signature.to_vec());
+            verifier.verify(&signature_der).map_err(Error::from)
         },
     }
 }
@@ -265,6 +270,56 @@ fn secure_compare(a: &[u8], b: &[u8]) -> bool {
     res == 0
 }
 
+fn der_to_raw_signature(der_sig: Vec<u8>) -> Vec<u8>{
+    let len_r = der_sig[3] as usize;
+    let len_s = der_sig[len_r + 5] as usize;
+    let mut raw_sig: Vec<u8> =vec![];
+    if der_sig[4] == 0 {
+        let mut r = der_sig[5..len_r + 4].to_vec();
+        raw_sig.append(&mut r);
+    }
+    else {
+        let mut r = der_sig[4..len_r + 4].to_vec();
+        raw_sig.append(&mut r);
+    }
+    if der_sig[len_r + 6] == 0 {
+        let mut s = der_sig[len_r + 7..len_r + len_s + 6].to_vec();
+        raw_sig.append(&mut s);
+    }
+    else {
+        let mut s = der_sig[len_r + 6..len_r + len_s + 6].to_vec();
+        raw_sig.append(&mut s);
+    }
+
+    return raw_sig
+}
+
+fn raw_to_der_signature(raw_sig: Vec<u8>) -> Vec<u8>{
+    let mut r: Vec<u8> = raw_sig[0..raw_sig.len()/2].to_vec();
+    let mut s: Vec<u8> = raw_sig[raw_sig.len()/2..].to_vec();
+    let mut b2 = r.len();
+    let mut b3 = s.len();
+    if r[0]>127{
+        b2 = r.len()+1;
+        let mut r2 = vec![0];
+        r2.append(&mut r);
+        r = r2;
+    }
+
+    if s[0]>127{
+        b3 = s.len() + 1;
+        let mut s2 = vec! [0];
+        s2.append(&mut s);
+        s = s2;
+    }
+
+    let b1 = b2 + b3 + 4;
+    let mut der_sig: Vec<u8> = vec![48, b1 as u8, 2, b2 as u8];
+    der_sig.append(&mut r);
+    der_sig.append(&mut vec![2, b3 as u8]);
+    der_sig.append(&mut s);
+    return der_sig
+}
 
 
 //todo
