@@ -280,11 +280,11 @@ fn secure_compare(a: &[u8], b: &[u8]) -> bool {
 
 fn der_to_raw_signature(der_sig: &[u8]) -> Vec<u8> {
     let der_sig = Input::from(der_sig);
-    let (r,s) = der_sig.read_all(derp::Error::Read, |der_sig| {
+    let (r, s) = der_sig.read_all(derp::Error::Read, |der_sig| {
         derp::nested(der_sig, Tag::Sequence, |der_sig| {
             let r = derp::positive_integer(der_sig)?;
             let s = derp::positive_integer(der_sig)?;
-        Ok((r.as_slice_less_safe(), s.as_slice_less_safe()))
+            Ok((r.as_slice_less_safe(), s.as_slice_less_safe()))
         })
     }).unwrap();
     let mut raw_sig = Vec::new();
@@ -295,8 +295,9 @@ fn der_to_raw_signature(der_sig: &[u8]) -> Vec<u8> {
 }
 
 fn raw_to_der_signature(raw_sig: &[u8]) -> Vec<u8> {
-    let r = raw_sig[..raw_sig.len()/2].to_vec();
-    let s = raw_sig[raw_sig.len()/2..].to_vec();
+    let raw_sig_midpoint = raw_sig.len() / 2;
+    let r = raw_sig[..raw_sig_midpoint].to_vec();
+    let s = raw_sig[raw_sig_midpoint..].to_vec();
     let mut der_sig = Vec::new();
     {
         let mut der = Der::new(&mut der_sig);
