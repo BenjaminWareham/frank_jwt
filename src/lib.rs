@@ -123,9 +123,9 @@ pub fn decode<P: ToKey>(
 
 fn get_signing_input(payload: &JsonValue, header: &JsonValue) -> Result<String, Error> {
     let header_json_str = serde_json::to_string(header)?;
-    let encoded_header = b64_enc(header_json_str.as_bytes(), base64::URL_SAFE);
+    let encoded_header = b64_enc(header_json_str.as_bytes(), base64::URL_SAFE_NO_PAD);
     let payload_json_str = serde_json::to_string(payload)?;
-    let encoded_payload = b64_enc(payload_json_str.as_bytes(), base64::URL_SAFE);
+    let encoded_payload = b64_enc(payload_json_str.as_bytes(), base64::URL_SAFE_NO_PAD);
     Ok(format!("{}.{}", encoded_header, encoded_payload))
 }
 
