@@ -141,7 +141,7 @@ fn sign_hmac<P: ToKey>(data: &str, key_path: &P, algorithm: Algorithm) -> Result
     let mut signer = Signer::new(stp, &key)?;
     signer.update(data.as_bytes())?;
     let hmac = signer.sign_to_vec()?;
-    Ok(b64_enc(hmac.as_slice(), base64::URL_SAFE))
+    Ok(b64_enc(hmac.as_slice(), base64::URL_SAFE_NO_PAD))
 }
 
 fn sign_rsa<P: ToKey>(
@@ -193,14 +193,14 @@ fn sign_es<P: ToKey>(
         }
     }
 
-    Ok(b64_enc(signature_raw.as_slice(), base64::URL_SAFE))
+    Ok(b64_enc(signature_raw.as_slice(), base64::URL_SAFE_NO_PAD))
 }
 
 fn sign(data: &str, private_key: PKey, digest: MessageDigest) -> Result<String, Error> {
     let mut signer = Signer::new(digest, &private_key)?;
     signer.update(data.as_bytes())?;
     let signature = signer.sign_to_vec()?;
-    Ok(b64_enc(signature.as_slice(), base64::URL_SAFE))
+    Ok(b64_enc(signature.as_slice(), base64::URL_SAFE_NO_PAD))
 }
 
 fn decode_segments(
@@ -215,7 +215,7 @@ fn decode_segments(
     let payload_segment = raw_segments[1];
     let crypto_segment = raw_segments[2];
     let (header, payload) = decode_header_and_payload(header_segment, payload_segment)?;
-    let signature = b64_dec(crypto_segment.as_bytes(), base64::URL_SAFE)?;
+    let signature = b64_dec(crypto_segment.as_bytes(), base64::URL_SAFE_NO_PAD)?;
     let signing_input = format!("{}.{}", header_segment, payload_segment);
     Ok((header, payload, signature.clone(), signing_input))
 }
@@ -225,7 +225,7 @@ fn decode_header_and_payload(
     payload_segment: &str,
 ) -> Result<(JsonValue, JsonValue), Error> {
     let b64_to_json = |seg| -> Result<JsonValue, Error> {
-        serde_json::from_slice(b64_dec(seg, base64::URL_SAFE)?.as_slice()).map_err(Error::from)
+        serde_json::from_slice(b64_dec(seg, base64::URL_SAFE_NO_PAD)?.as_slice()).map_err(Error::from)
     };
 
     let header_json = b64_to_json(header_segment)?;
