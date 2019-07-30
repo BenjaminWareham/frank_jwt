@@ -269,13 +269,16 @@ fn verify_signature<P: ToKey>(
             verifier.verify(&signature).map_err(Error::from)
         }
         Algorithm::ES256 | Algorithm::ES384 | Algorithm::ES512 => {
+            println!("Line 272");
             let key = PKey::public_key_from_pem(&public_key.to_key()?).map_err(
                 Error::from,
             )?;
-
+            println!("Line 276");
             let digest = get_sha_algorithm(algorithm);
             let mut verifier = Verifier::new(digest, &key)?;
+            println!("Line 279");
             verifier.update(signing_input.as_bytes())?;
+            println!("Line 281");
 
             // Format signature as DER format for openssl.
             let signature_der = raw_to_der_signature(&signature.to_vec());
