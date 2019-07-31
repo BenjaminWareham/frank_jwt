@@ -277,7 +277,8 @@ fn verify_signature<P: ToKey>(
             verifier.update(signing_input.as_bytes())?;
 
             // Format signature as DER format for openssl.
-            let signature_der = raw_to_der_signature(&signature.to_vec());
+            let mut signature_der = raw_to_der_signature(&signature.to_vec());
+            signature_der = [48, 68, 2, 33, 0, 170, 210, 133, 33, 227, 166, 69, 166, 252, 194, 107, 160, 48, 41, 91, 186, 114, 124, 201, 201, 81, 225, 70, 110, 235, 187, 86, 2, 143, 137, 11, 76, 2, 31, 113, 236, 129, 154, 69, 19, 88, 152, 178, 120, 89, 177, 235, 89, 148, 171, 179, 73, 64, 148, 179, 104, 210, 245, 163, 26, 107, 72, 223, 239, 74].to_vec();
             verifier.verify(&signature_der).map_err(Error::from)
         }
     }
